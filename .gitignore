@@ -1,0 +1,10 @@
+# Generated files
+target/*
+
+!target/wasm32-unknown-unknown/
+target/wasm32-unknown-unknown/*
+
+!target/wasm32-unknown-unknown/debug
+target/wasm32-unknown-unknown/debug/*
+
+!target/wasm32-unknown-unknown/debug/demos.wasm
