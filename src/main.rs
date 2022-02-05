@@ -1,10 +1,8 @@
-use crate::demo_mainscreen::DemoMainScreen;
 use crate::demo_snowflake::SnowingState;
 use demo_state::DemoState;
 use instant::SystemTime;
 use macroquad::prelude::*;
 
-mod demo_mainscreen;
 mod demo_snowflake;
 mod demo_state;
 
