@@ -1,7 +1,5 @@
 use crate::demo_state::DemoState;
-use instant::SystemTime;
 use macroquad::prelude::*;
-use std::f64;
 
 //inspired by
 //#https://github.com/s9w/oof/blob/master/demos/snow_demo.cpp
@@ -18,7 +16,6 @@ pub struct SnowingState {
     max_speed: f32,
     grid_size_px: u32,
     grid_width: u32,
-    grid_height: u32,
     min_brightness: f32,
     max_brightness: f32,
     spawn_chance: f32,
@@ -30,7 +27,6 @@ impl SnowingState {
     pub fn new(screen_width_px: u32, screen_height_px: u32) -> Self {
         let grid_size_px: u32 = 20;
         let grid_width = screen_width_px / grid_size_px;
-        let grid_height: u32 = screen_height_px / grid_size_px;
 
         let height_levels = vec![screen_height_px as f32; grid_width as usize];
 
@@ -38,7 +34,6 @@ impl SnowingState {
             max_speed: 120.0,
             grid_size_px: grid_size_px,
             grid_width: grid_width,
-            grid_height: grid_height,
             min_brightness: 0.3,
             max_brightness: 1.0,
             spawn_chance: 0.8,
@@ -46,7 +41,7 @@ impl SnowingState {
             height_levels,
         };
 
-        for i in (0..1) {
+        for _ in 0..1 {
             state.new_flake();
         }
 
@@ -83,8 +78,6 @@ impl DemoState for SnowingState {
             let column = (flake.x / self.grid_size_px as f32).floor() as usize;
 
             let snow_height = self.height_levels[column];
-
-            let desired_y = flake.y + (delta * self.max_speed * flake.z_distance);
 
             if snow_height >= (flake.y + self.grid_size_px as f32) {
                 flake.y = flake.y + (delta * self.max_speed * flake.z_distance);
