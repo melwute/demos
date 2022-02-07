@@ -10,5 +10,3 @@ opt-level = 3
 [dependencies]
 macroquad = "0.3.10"
 instant = "0.1"
-rand = "0.8.4"
-getrandom = { version = "0.2", features = ["js"] }

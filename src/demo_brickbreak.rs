@@ -1,11 +1,6 @@
 use crate::demo_state::DemoState;
 
-use macroquad::prelude::{
-    draw_line, draw_rectangle, get_frame_time, is_mouse_button_down, is_mouse_button_pressed,
-    is_mouse_button_released, mouse_position, mouse_position_local, screen_height, screen_width,
-    vec2, Color, MouseButton, Vec2, RED,
-};
-use rand::{thread_rng, Rng};
+use macroquad::prelude::*;
 
 pub struct Brick {
     color: Color,
@@ -38,7 +33,6 @@ pub struct DemoBrickBreakState {
 impl DemoBrickBreakState {
     pub fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
-        let mut rng = rand::thread_rng();
         let ball_spawn_colors = vec![RED];
 
         let brick_spawn_colors = vec![
@@ -63,7 +57,7 @@ impl DemoBrickBreakState {
             let width = screen_size.x / columns as f32;
             for c in 0..columns {
                 bricks.push(Brick {
-                    color: brick_spawn_colors[rng.gen_range(0..brick_spawn_colors.len())],
+                    color: brick_spawn_colors[rand::gen_range(0, brick_spawn_colors.len())],
                     position: vec2(c as f32 * width, r as f32 * brick_height),
                     dimension: vec2(width, brick_height),
                 });
@@ -134,13 +128,12 @@ impl DemoState for DemoBrickBreakState {
             m = m.normalize();
             m *= ball_speed;
 
-            let mut rng = rand::thread_rng();
             self.balls.push(Ball {
                 position: self.ball_spawn_location,
                 velocity: m,
                 dimension: self.ball_dimension,
                 active: true,
-                color: self.ball_spawn_colors[rng.gen_range(0..self.ball_spawn_colors.len())],
+                color: self.ball_spawn_colors[rand::gen_range(0, self.ball_spawn_colors.len())],
             });
 
             self.seconds_until_next_shot = 0.25;
