@@ -37,8 +37,6 @@ pub struct DemoBrickBreakState {
 impl DemoBrickBreakState {
     pub fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
-        let mut rng = rand::thread_rng();
-
         let ball_spawn_colors = vec![RED];
 
         let brick_spawn_colors = vec![
@@ -50,34 +48,9 @@ impl DemoBrickBreakState {
             Color::from_rgba(109, 101, 246, 255),
         ];
 
-        let mut balls = Vec::new();
+        let balls = Vec::new();
         let ball_dimension = vec2(16.0, 16.0);
 
-        for _ in 0..10 {
-            let x = rng.gen_range(0.0..screen_size.x - ball_dimension.x);
-            let y = rng.gen_range(0.0..screen_size.y - ball_dimension.y);
-            let mut velocity = vec2(100.0, 100.0);
-
-            velocity.x = if rng.gen_bool(0.5) {
-                -velocity.x
-            } else {
-                velocity.x
-            };
-
-            velocity.y = if rng.gen_bool(0.5) {
-                -velocity.y
-            } else {
-                velocity.y
-            };
-
-            balls.push(Ball {
-                active: true,
-                position: vec2(x, y),
-                dimension: ball_dimension,
-                velocity,
-                color: ball_spawn_colors[rng.gen_range(0..ball_spawn_colors.len())],
-            });
-        }
         DemoBrickBreakState {
             screen_size,
             balls,
