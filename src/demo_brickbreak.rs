@@ -9,6 +9,8 @@ use rand::{thread_rng, Rng};
 
 pub struct Brick {
     color: Color,
+    position: Vec2,
+    dimension: Vec2,
 }
 
 pub struct Ball {
@@ -16,11 +18,15 @@ pub struct Ball {
     position: Vec2,
     dimension: Vec2,
     velocity: Vec2,
+    color: Color,
 }
 
 pub struct DemoBrickBreakState {
+    brick_spawn_colors: Vec<Color>,
+
     screen_size: Vec2,
 
+    ball_spawn_colors: Vec<Color>,
     ball_dimension: Vec2,
     balls: Vec<Ball>,
 
@@ -32,6 +38,17 @@ impl DemoBrickBreakState {
     pub fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
         let mut rng = rand::thread_rng();
+
+        let ball_spawn_colors = vec![RED];
+
+        let brick_spawn_colors = vec![
+            Color::from_rgba(208, 58, 209, 255),
+            Color::from_rgba(247, 83, 82, 255),
+            Color::from_rgba(253, 128, 20, 255),
+            Color::from_rgba(255, 144, 36, 255),
+            Color::from_rgba(5, 179, 32, 255),
+            Color::from_rgba(109, 101, 246, 255),
+        ];
 
         let mut balls = Vec::new();
         let ball_dimension = vec2(16.0, 16.0);
@@ -58,6 +75,7 @@ impl DemoBrickBreakState {
                 position: vec2(x, y),
                 dimension: ball_dimension,
                 velocity,
+                color: ball_spawn_colors[rng.gen_range(0..ball_spawn_colors.len())],
             });
         }
         DemoBrickBreakState {
@@ -66,6 +84,8 @@ impl DemoBrickBreakState {
             ball_spawn_location: calc_ball_spawn_location(screen_size),
             ball_dimension,
             seconds_until_next_shot: 0.0,
+            brick_spawn_colors: brick_spawn_colors,
+            ball_spawn_colors: ball_spawn_colors,
         }
     }
 }
@@ -121,11 +141,13 @@ impl DemoState for DemoBrickBreakState {
             m = m.normalize();
             m *= ball_speed;
 
+            let mut rng = rand::thread_rng();
             self.balls.push(Ball {
                 position: self.ball_spawn_location,
                 velocity: m,
                 dimension: self.ball_dimension,
                 active: true,
+                color: self.ball_spawn_colors[rng.gen_range(0..self.ball_spawn_colors.len())],
             });
 
             self.seconds_until_next_shot = 0.25;
@@ -158,7 +180,7 @@ impl DemoState for DemoBrickBreakState {
                     ball.position.y,
                     ball.dimension.x,
                     ball.dimension.y,
-                    color,
+                    ball.color,
                 );
             }
         }
