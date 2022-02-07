@@ -22,13 +22,14 @@ pub struct Ball {
 }
 
 pub struct DemoBrickBreakState {
-    brick_spawn_colors: Vec<Color>,
-
     screen_size: Vec2,
 
     ball_spawn_colors: Vec<Color>,
     ball_dimension: Vec2,
     balls: Vec<Ball>,
+
+    brick_spawn_colors: Vec<Color>,
+    bricks: Vec<Brick>,
 
     seconds_until_next_shot: f32,
     ball_spawn_location: Vec2,
@@ -37,6 +38,7 @@ pub struct DemoBrickBreakState {
 impl DemoBrickBreakState {
     pub fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
+        let mut rng = rand::thread_rng();
         let ball_spawn_colors = vec![RED];
 
         let brick_spawn_colors = vec![
@@ -51,6 +53,23 @@ impl DemoBrickBreakState {
         let balls = Vec::new();
         let ball_dimension = vec2(16.0, 16.0);
 
+        //
+        let mut bricks = Vec::new();
+        let rows = 5;
+        let columns = 10;
+        let brick_height = 22.0;
+
+        for r in 0..rows {
+            let width = screen_size.x / columns as f32;
+            for c in 0..columns {
+                bricks.push(Brick {
+                    color: brick_spawn_colors[rng.gen_range(0..brick_spawn_colors.len())],
+                    position: vec2(c as f32 * width, r as f32 * brick_height),
+                    dimension: vec2(width, brick_height),
+                });
+            }
+        }
+
         DemoBrickBreakState {
             screen_size,
             balls,
@@ -59,6 +78,7 @@ impl DemoBrickBreakState {
             seconds_until_next_shot: 0.0,
             brick_spawn_colors: brick_spawn_colors,
             ball_spawn_colors: ball_spawn_colors,
+            bricks,
         }
     }
 }
@@ -132,6 +152,16 @@ impl DemoState for DemoBrickBreakState {
             }
         }
 
+        for brick in self.bricks.iter() {
+            draw_rectangle(
+                brick.position.x,
+                brick.position.y,
+                brick.dimension.x,
+                brick.dimension.y,
+                brick.color,
+            );
+        }
+
         let mut m = mouse_pos - self.ball_spawn_location;
         m = m.normalize();
         m *= 50.0; //length of line
@@ -147,7 +177,6 @@ impl DemoState for DemoBrickBreakState {
 
         for ball in self.balls.iter() {
             if ball.active {
-                let color = Color::new(0.0, 1.0, 0.0, 1.0);
                 draw_rectangle(
                     ball.position.x,
                     ball.position.y,
