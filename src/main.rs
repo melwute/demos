@@ -18,9 +18,7 @@ fn get_epoch_ms() -> u128 {
 #[macroquad::main("BasicShapes")]
 async fn main() {
     rand::srand(get_epoch_ms() as u64);
-    let mut state = ApplicationState {
-        current_demo: Some(Box::new(DemoBrickBreakState::new())),
-    };
+    let mut state = ApplicationState { current_demo: None };
     loop {
         state.process();
         next_frame().await

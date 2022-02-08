@@ -6,6 +6,7 @@ pub struct Brick {
     color: Color,
     position: Vec2,
     dimension: Vec2,
+    active: bool,
 }
 
 pub struct Ball {
@@ -33,7 +34,7 @@ pub struct DemoBrickBreakState {
 impl DemoBrickBreakState {
     pub fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
-        let ball_spawn_colors = vec![RED];
+        let ball_spawn_colors = vec![GREEN];
 
         let brick_spawn_colors = vec![
             Color::from_rgba(208, 58, 209, 255),
@@ -60,6 +61,7 @@ impl DemoBrickBreakState {
                     color: brick_spawn_colors[rand::gen_range(0, brick_spawn_colors.len())],
                     position: vec2(c as f32 * width, r as f32 * brick_height),
                     dimension: vec2(width, brick_height),
+                    active: true,
                 });
             }
         }
@@ -82,27 +84,62 @@ pub fn calc_ball_spawn_location(screen_size: Vec2) -> Vec2 {
     vec2(screen_size.x / 2.0, screen_size.y - distance_from_bottom)
 }
 
-fn move_ball(ball: &mut Ball, screen_size: Vec2, seconds_delta: f32) {
-    ball.position += ball.velocity * seconds_delta;
+fn collides(a_pos: Vec2, a_dim: Vec2, b_pos: Vec2, b_dim: Vec2) -> bool {
+    return a_pos.x < b_pos.x + b_dim.x
+        && a_pos.x + a_dim.x > b_pos.x
+        && a_pos.y < b_pos.y + b_dim.y
+        && a_pos.y + a_dim.y > b_pos.y;
+}
 
-    if ball.position.x <= 0.0 {
-        ball.position.x = 0.0;
+fn move_ball(ball: &mut Ball, bricks: &mut Vec<Brick>, screen_size: Vec2, seconds_delta: f32) {
+    let mut desired = ball.position + ball.velocity * seconds_delta;
+
+    if desired.x <= 0.0 {
+        desired.x = 0.0;
         ball.velocity.x *= -1.0;
     }
-    if ball.position.x >= screen_size.x - ball.dimension.x {
-        ball.position.x = screen_size.x - ball.dimension.x;
+    if desired.x >= screen_size.x - ball.dimension.x {
+        desired.x = screen_size.x - ball.dimension.x;
         ball.velocity.x *= -1.0;
     }
 
-    if ball.position.y <= 0.0 {
-        ball.position.y = 0.0;
+    if desired.y <= 0.0 {
+        desired.y = 0.0;
         ball.velocity.y *= -1.0;
     }
 
-    if ball.position.y >= screen_size.y - ball.dimension.y {
-        ball.position.y = screen_size.y - ball.dimension.y;
+    if desired.y >= screen_size.y - ball.dimension.y {
+        desired.y = screen_size.y - ball.dimension.y;
         ball.velocity.y *= -1.0;
         ball.active = false;
+    }
+
+    let mut collided = false;
+    for brick in bricks.iter_mut() {
+        let collides = collides(brick.position, brick.dimension, desired, ball.dimension);
+
+        if collides {
+            //Use the previous location of the ball to determine where to flop.
+            let horizontal_collision = brick.position.x < ball.position.x + ball.dimension.x
+                && brick.position.x + brick.dimension.x > ball.position.x;
+
+            let vertial_collision = brick.position.y < ball.position.y + ball.dimension.y
+                && brick.position.y + brick.dimension.y > ball.position.y;
+
+            brick.active = false;
+            if horizontal_collision {
+                ball.velocity.y *= -1.0;
+            }
+            if vertial_collision {
+                ball.velocity.x *= -1.0;
+            }
+            collided = true;
+            break;
+        }
+    }
+
+    if !collided {
+        ball.position = desired;
     }
 }
 
@@ -141,7 +178,7 @@ impl DemoState for DemoBrickBreakState {
 
         for ball in self.balls.iter_mut() {
             if ball.active {
-                move_ball(ball, self.screen_size, seconds_delta);
+                move_ball(ball, &mut self.bricks, self.screen_size, seconds_delta);
             }
         }
 
@@ -168,7 +205,7 @@ impl DemoState for DemoBrickBreakState {
             RED,
         );
 
-        for ball in self.balls.iter() {
+        for ball in self.balls.iter_mut() {
             if ball.active {
                 draw_rectangle(
                     ball.position.x,
@@ -181,5 +218,6 @@ impl DemoState for DemoBrickBreakState {
         }
 
         self.balls.retain(|ball| ball.active);
+        self.bricks.retain(|bricks| bricks.active);
     }
 }
