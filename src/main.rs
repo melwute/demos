@@ -1,11 +1,14 @@
 use crate::demo_brickbreak::DemoBrickBreakState;
 use crate::demo_snowflake::SnowingState;
+use crate::demo_somethingtech::DemoSomethingTech;
+
 use demo_state::DemoState;
 use instant::SystemTime;
 use macroquad::prelude::*;
 
 mod demo_brickbreak;
 mod demo_snowflake;
+mod demo_somethingtech;
 mod demo_state;
 
 fn get_epoch_ms() -> u128 {
@@ -18,9 +21,11 @@ fn get_epoch_ms() -> u128 {
 #[macroquad::main("BasicShapes")]
 async fn main() {
     rand::srand(get_epoch_ms() as u64);
-    let mut state = ApplicationState { current_demo: None };
+    let mut state = ApplicationState {
+        current_demo: Some(Box::new(DemoSomethingTech::new().await)),
+    };
     loop {
-        state.process();
+        state.process().await;
         next_frame().await
     }
 }
@@ -29,9 +34,9 @@ pub struct ApplicationState {
     current_demo: Option<Box<dyn DemoState>>,
 }
 impl ApplicationState {
-    fn process(&mut self) {
+    async fn process(&mut self) {
         if is_key_released(KeyCode::Escape) {
-            self.current_demo = None;
+            self.current_demo = None
         }
 
         if let Some(demo) = &mut self.current_demo {
@@ -39,11 +44,11 @@ impl ApplicationState {
             return;
         }
 
-        self.mainscreen_process_frame();
+        self.mainscreen_process_frame().await;
     }
 
     //maybe this should be its own DemoState...
-    fn mainscreen_process_frame(&mut self) {
+    async fn mainscreen_process_frame(&mut self) {
         let horizontal_spacing = 40.0;
         let mut last_y = 30.0;
 
@@ -59,6 +64,9 @@ impl ApplicationState {
         draw_text("2) BrickBreak ", 20.0, last_y, 30.0, DARKGRAY);
         last_y += horizontal_spacing;
 
+        draw_text("3) Something ", 20.0, last_y, 30.0, DARKGRAY);
+        last_y += horizontal_spacing;
+
         if is_key_released(KeyCode::Key1) {
             self.current_demo = Some(Box::new(SnowingState::new(
                 screen_width() as u32,
@@ -68,6 +76,10 @@ impl ApplicationState {
 
         if is_key_released(KeyCode::Key2) {
             self.current_demo = Some(Box::new(DemoBrickBreakState::new()));
+        }
+
+        if is_key_released(KeyCode::Key3) {
+            self.current_demo = Some(Box::new(DemoSomethingTech::new().await));
         }
     }
 }
