@@ -7,6 +7,22 @@ use std::{
     ops::{AddAssign, SubAssign},
 };
 
+const TILE_WIDTH: f32 = 16.0;
+const TILE_HEIGHT: f32 = 16.0;
+
+const SPRITESHEET_FARMER: Rect = spritesheet_rect(25, 1);
+const SPRITESHEET_TARGET: Rect = spritesheet_rect(36, 12);
+const SPRITESHEET_WARRIOR: Rect = spritesheet_rect(31, 0);
+
+const fn spritesheet_rect(location_x: usize, location_y: usize) -> Rect {
+    Rect {
+        x: (location_x * TILE_WIDTH as usize) as f32,
+        y: (location_y * TILE_HEIGHT as usize) as f32,
+        w: TILE_WIDTH,
+        h: TILE_HEIGHT,
+    }
+}
+
 pub struct CappedValue {
     current: i32,
     max: i32,
@@ -55,10 +71,12 @@ impl CappedValue {
 pub struct DemoSomethingTech {
     screen_size: Vec2,
 
-    player: Blip,
+    sprite_sheet: Texture2D,
+
+    player: Entity,
     target: Option<u32>, //todo struct for entity id
     last_entity_id: u32,
-    others: Vec<Blip>,
+    others: Vec<Entity>,
 }
 
 pub struct CombatStats {
@@ -73,22 +91,22 @@ pub struct CombatStats {
     chance_to_hit: f32,
 }
 
-pub struct Blip {
+pub struct Entity {
     entity_id: u32,
     position: Vec2,
-    radius: f32,
+    spritesheet_location: Rect,
     combat: CombatStats,
 }
 
-pub fn random_blip(screen_size: Vec2, entity_id: u32) -> Blip {
+pub fn random_entity(screen_size: Vec2, entity_id: u32) -> Entity {
     let x: f32 = rand::gen_range(0.0, screen_size.x) as f32;
     let y: f32 = rand::gen_range(0.0, screen_size.y) as f32;
-    Blip {
+    Entity {
         entity_id,
         position: vec2(x, y),
-        radius: 8.0,
+        spritesheet_location: SPRITESHEET_FARMER,
         combat: CombatStats {
-            name: "blip".to_string(),
+            name: "Farmer".to_string(),
             health: CappedValue::new(10, 10),
             min_damage: 1,
             max_damage: 2,
@@ -123,10 +141,10 @@ impl DemoSomethingTech {
     pub async fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
 
-        let blip = Blip {
+        let player = Entity {
             entity_id: 0,
             position: vec2(screen_size.x / 2.0, screen_size.y / 2.0),
-            radius: 8.0,
+            spritesheet_location: SPRITESHEET_WARRIOR,
             combat: CombatStats {
                 name: "Player".to_string(),
                 health: CappedValue::new(10, 10),
@@ -138,9 +156,15 @@ impl DemoSomethingTech {
             },
         };
 
+        let sprite_sheet = load_texture("src/colored_transparent_packed.png")
+            .await
+            .unwrap();
+        sprite_sheet.set_filter(FilterMode::Nearest);
+
         let mut demo = DemoSomethingTech {
             screen_size,
-            player: blip,
+            sprite_sheet,
+            player,
             target: None,
             others: Vec::new(),
             last_entity_id: 0,
@@ -149,17 +173,51 @@ impl DemoSomethingTech {
         for _ in 0..2 {
             demo.last_entity_id += 1;
             demo.others
-                .push(random_blip(screen_size, demo.last_entity_id));
+                .push(random_entity(screen_size, demo.last_entity_id));
         }
 
         demo
     }
 }
 
-fn draw_blip(blip: &Blip, color: &Color) {
-    draw_circle(blip.position.x, blip.position.y, blip.radius, *color);
+fn draw_sprite(tileset: &Texture2D, position: Vec2, spritesheet_location: Rect) {
+    let mut params = DrawTextureParams::default();
+    params.source = Some(spritesheet_location);
+    params.dest_size = Some(Vec2::new(32.0, 32.0));
+    draw_texture_ex(*tileset, position.x, position.y, WHITE, params);
 }
 
+fn draw_entity(tileset: &Texture2D, entity: &Entity) {
+    draw_sprite(tileset, entity.position, entity.spritesheet_location);
+
+    let health_offset_y = -6.0;
+    let name_offset_y = health_offset_y - 6.0;
+
+    draw_rectangle(
+        entity.position.x,
+        entity.position.y + health_offset_y,
+        32.0, //vary size be health %tages
+        6.0,
+        RED,
+    );
+    let health_remaining = entity.combat.health.current as f32 / entity.combat.health.max as f32;
+    draw_rectangle(
+        entity.position.x,
+        entity.position.y + health_offset_y,
+        32.0 * health_remaining,
+        6.0,
+        YELLOW,
+    );
+
+    //draw_circle(mouse_x, mouse_y, 3.0, YELLOW);
+    draw_text(
+        &entity.combat.name,
+        entity.position.x,
+        entity.position.y + name_offset_y,
+        20.0,
+        DARKGRAY,
+    );
+}
 fn get_player_movement() -> Vec2 {
     let mut vel = Vec2::default();
     if is_key_down(KeyCode::Right) || is_key_down(KeyCode::D) {
@@ -246,20 +304,16 @@ impl DemoState for DemoSomethingTech {
             }
         }
 
-        draw_blip(&self.player, &GREEN);
+        draw_entity(&self.sprite_sheet, &self.player);
 
-        for blip in &self.others {
-            let color = if let Some(current) = self.target {
-                if current == blip.entity_id {
-                    RED
-                } else {
-                    YELLOW
+        for entity in &self.others {
+            if let Some(current) = self.target {
+                if current == entity.entity_id {
+                    draw_sprite(&self.sprite_sheet, entity.position, SPRITESHEET_TARGET);
                 }
-            } else {
-                YELLOW
             };
 
-            draw_blip(blip, &color);
+            draw_entity(&self.sprite_sheet, entity);
         }
 
         //ui
