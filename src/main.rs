@@ -1,6 +1,6 @@
 use crate::demo_brickbreak::DemoBrickBreakState;
 use crate::demo_snowflake::SnowingState;
-use crate::demo_somethingtech::DemoSomethingTech;
+use crate::demo_tabtargetrpg::DemoTabTargetRpg;
 
 use demo_state::DemoState;
 use instant::SystemTime;
@@ -8,8 +8,8 @@ use macroquad::prelude::*;
 
 mod demo_brickbreak;
 mod demo_snowflake;
-mod demo_somethingtech;
 mod demo_state;
+mod demo_tabtargetrpg;
 
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
@@ -22,7 +22,7 @@ fn get_epoch_ms() -> u128 {
 async fn main() {
     rand::srand(get_epoch_ms() as u64);
     let mut state = ApplicationState {
-        current_demo: Some(Box::new(DemoSomethingTech::new().await)),
+        current_demo: Some(Box::new(DemoTabTargetRpg::new().await)),
     };
     loop {
         state.process().await;
@@ -79,7 +79,7 @@ impl ApplicationState {
         }
 
         if is_key_released(KeyCode::Key3) {
-            self.current_demo = Some(Box::new(DemoSomethingTech::new().await));
+            self.current_demo = Some(Box::new(DemoTabTargetRpg::new().await));
         }
     }
 }

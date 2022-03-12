@@ -68,13 +68,13 @@ impl CappedValue {
     }
 }
 
-pub struct DemoSomethingTech {
+pub struct DemoTabTargetRpg {
     screen_size: Vec2,
 
     sprite_sheet: Texture2D,
 
     player: Entity,
-    target: Option<u32>, //todo struct for entity id
+
     last_entity_id: u32,
     others: Vec<Entity>,
 }
@@ -89,6 +89,15 @@ pub struct CombatStats {
     attack_speed: Duration,
     until_next_attack: Duration,
     chance_to_hit: f32,
+    auto_attacking: bool,
+    target: Option<u32>, //todo struct for entity id
+}
+
+impl CombatStats {
+    pub fn clear_target(&mut self) {
+        self.auto_attacking = false;
+        self.target = None;
+    }
 }
 
 pub struct Entity {
@@ -112,7 +121,9 @@ pub fn random_entity(screen_size: Vec2, entity_id: u32) -> Entity {
             max_damage: 2,
             attack_speed: Duration::from_secs_f64(1.0),
             until_next_attack: Duration::from_secs_f64(0.0),
-            chance_to_hit: 0.9,
+            chance_to_hit: 0.5,
+            auto_attacking: false,
+            target: None,
         },
     }
 }
@@ -137,7 +148,7 @@ fn attack(source: &mut CombatStats, target: &mut CombatStats, delta: Duration) {
     source.until_next_attack = source.attack_speed - leftover;
 }
 
-impl DemoSomethingTech {
+impl DemoTabTargetRpg {
     pub async fn new() -> Self {
         let screen_size = vec2(screen_width(), screen_height());
 
@@ -152,7 +163,9 @@ impl DemoSomethingTech {
                 max_damage: 2,
                 attack_speed: Duration::from_secs_f64(1.0),
                 until_next_attack: Duration::from_secs_f64(0.5),
-                chance_to_hit: 0.5,
+                chance_to_hit: 0.9,
+                auto_attacking: false,
+                target: None,
             },
         };
 
@@ -161,11 +174,10 @@ impl DemoSomethingTech {
             .unwrap();
         sprite_sheet.set_filter(FilterMode::Nearest);
 
-        let mut demo = DemoSomethingTech {
+        let mut demo = DemoTabTargetRpg {
             screen_size,
             sprite_sheet,
             player,
-            target: None,
             others: Vec::new(),
             last_entity_id: 0,
         };
@@ -236,15 +248,7 @@ fn get_player_movement() -> Vec2 {
     return vel;
 }
 
-// see screen shot detail.
-// yellow cirlces for self
-// red circles for active hostiles
-// green circles for others? ... or grey or something.
-
-// tab target to switch between targets.
-// press one to auto attack.
-
-impl DemoState for DemoSomethingTech {
+impl DemoState for DemoTabTargetRpg {
     fn process_frame(&mut self) {
         let seconds_delta = get_frame_time();
         let seconds_duration = Duration::from_secs_f32(seconds_delta);
@@ -258,7 +262,13 @@ impl DemoState for DemoSomethingTech {
         self.player.position += vel * 200.0 * seconds_delta;
 
         if is_key_released(KeyCode::GraveAccent) {
-            self.target = None;
+            self.player.combat.target = None;
+        }
+
+        if is_key_released(KeyCode::Key1) {
+            if let Some(current) = self.player.combat.target {
+                self.player.combat.auto_attacking = true;
+            }
         }
 
         if is_key_released(KeyCode::Tab) {
@@ -266,7 +276,7 @@ impl DemoState for DemoSomethingTech {
             let targets: Vec<u32> = self.others.iter().map(|x| x.entity_id).collect();
             println!("{:?}", targets);
             if targets.len() > 0 {
-                if let Some(current) = self.target {
+                if let Some(current) = self.player.combat.target {
                     println!("curr entity: {:?}", current);
                     let index = targets.iter().position(|&i| i == current);
                     println!("entity index{:?}", index);
@@ -276,38 +286,40 @@ impl DemoState for DemoSomethingTech {
                         if index >= targets.len() {
                             index = 0;
                         }
-                        self.target = Some(targets[index]);
+                        self.player.combat.target = Some(targets[index]);
                     }
                 } else {
-                    self.target = Some(targets[0]);
+                    self.player.combat.target = Some(targets[0]);
                 }
             }
         }
 
-        if let Some(target) = self.target {
+        if let Some(target) = self.player.combat.target {
             let target = self.others.iter_mut().find(|x| x.entity_id == target);
             if let Some(target) = target {
-                attack(
-                    &mut self.player.combat,
-                    &mut target.combat,
-                    seconds_duration,
-                );
+                if self.player.combat.auto_attacking {
+                    attack(
+                        &mut self.player.combat,
+                        &mut target.combat,
+                        seconds_duration,
+                    );
+                }
             }
         }
 
         self.others.retain(|r| r.combat.health.current > 0);
 
-        if let Some(target) = self.target {
+        if let Some(target) = self.player.combat.target {
             let found_target = self.others.iter_mut().find(|x| x.entity_id == target);
             if let None = found_target {
-                self.target = None;
+                self.player.combat.clear_target();
             }
         }
 
         draw_entity(&self.sprite_sheet, &self.player);
 
         for entity in &self.others {
-            if let Some(current) = self.target {
+            if let Some(current) = self.player.combat.target {
                 if current == entity.entity_id {
                     draw_sprite(&self.sprite_sheet, entity.position, SPRITESHEET_TARGET);
                 }
@@ -316,16 +328,19 @@ impl DemoState for DemoSomethingTech {
             draw_entity(&self.sprite_sheet, entity);
         }
 
+        self.draw_ui();
+    }
+}
+
+impl DemoTabTargetRpg {
+    fn draw_ui(&mut self) {
         //ui
         let targeting_root = vec2(10.0, 20.0);
         let font_size = 16.0;
-
         let targeting_spacing_y = 16.0;
-
         let mut current = targeting_root.clone();
         draw_text("Self", current.x, current.y, font_size, WHITE);
         current.y += targeting_spacing_y;
-
         draw_text(
             &format!(
                 "Health: ({}/{})",
@@ -337,17 +352,15 @@ impl DemoState for DemoSomethingTech {
             WHITE,
         );
         current.y += targeting_spacing_y;
-
         draw_text(
-            &format!("Target {:?}", self.target),
+            &format!("Target {:?}", self.player.combat.target),
             current.x,
             current.y,
             font_size,
             WHITE,
         );
         current.y += targeting_spacing_y;
-
-        if let Some(target) = self.target {
+        if let Some(target) = self.player.combat.target {
             let target = self.others.iter_mut().find(|x| x.entity_id == target);
             if let Some(target) = target {
                 draw_text(
@@ -362,7 +375,18 @@ impl DemoState for DemoSomethingTech {
                 );
             }
         }
+        current.y += targeting_spacing_y;
 
+        draw_text(&format!("Skills"), current.x, current.y, font_size, WHITE);
+        current.y += targeting_spacing_y;
+
+        draw_text(
+            &format!("1) Auto attack"),
+            current.x,
+            current.y,
+            font_size,
+            WHITE,
+        );
         current.y += targeting_spacing_y;
     }
 }
