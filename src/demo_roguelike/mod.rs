@@ -11,7 +11,7 @@ use std::{
 const TILE_WIDTH: f32 = 16.0;
 const TILE_HEIGHT: f32 = 16.0;
 
-pub struct DemoRoguelikeGrid {
+pub struct DemoRoguelike {
     screen_size: IVec2, //TODO: Dimension type?
     grid_size: IVec2,   //TODO: Dimension type?
     font: Font,
@@ -19,7 +19,7 @@ pub struct DemoRoguelikeGrid {
     player_location: IVec2,
 }
 
-impl DemoRoguelikeGrid {
+impl DemoRoguelike {
     pub async fn new() -> Self {
         let screen_results = calc_screen_size();
 
@@ -27,7 +27,7 @@ impl DemoRoguelikeGrid {
 
         let player_location = screen_results.grid_size / 2;
 
-        let mut demo = DemoRoguelikeGrid {
+        let mut demo = DemoRoguelike {
             font,
             screen_size: screen_results.screen_size,
             grid_size: screen_results.grid_size,
@@ -60,7 +60,7 @@ fn to_screen_px(grid: IVec2) -> Vec2 {
     Vec2::new(grid.x as f32 * TILE_WIDTH, grid.y as f32 * TILE_HEIGHT)
 }
 
-impl DemoRoguelikeGrid {
+impl DemoRoguelike {
     pub fn try_move_player(&mut self, delta: IVec2) {
         let new = self.player_location + delta;
         //check valid later
@@ -86,7 +86,7 @@ fn get_player_movement() -> IVec2 {
     return delta;
 }
 
-impl DemoState for DemoRoguelikeGrid {
+impl DemoState for DemoRoguelike {
     fn process_frame(&mut self) {
         let seconds_delta = get_frame_time();
         let seconds_duration = Duration::from_secs_f32(seconds_delta);
