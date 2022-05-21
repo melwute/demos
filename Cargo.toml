@@ -8,5 +8,5 @@ edition = "2018"
 opt-level = 3
 
 [dependencies]
-macroquad = "0.3.10"
+macroquad = "0.3.16"
 instant = "0.1"

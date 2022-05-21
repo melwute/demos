@@ -185,11 +185,13 @@ impl DemoState for DemoRoguelike {
             }
         }
         let screen = to_screen_px(self.player.position);
+        /*
         draw_sprite(
             &self.sprite_sheet,
             screen,
             self.player.display.spritesheet_location,
         );
-        //draw_text_ex("@", screen.x, screen.y, params);
+         */
+        draw_text_ex("@", screen.x, screen.y, params);
     }
 }
