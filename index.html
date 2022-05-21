@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>TITLE</title>
+    <!--
     <style>
         html,
         body,
@@ -17,13 +18,41 @@
             z-index: 0;
         }
     </style>
+    -->
 </head>
 
 <body>
-    <canvas id="glcanvas" tabindex='1'></canvas>
-    <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js -->
+    <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js 
     <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle.js"></script>
-    <script>load("target/wasm32-unknown-unknown/debug/demos.wasm");</script> <!-- Your compiled wasm file -->
+    -->
+    <!--
+    <canvas id="glcanvas" tabindex='1'></canvas>
+    <script src="js/mq_js_bundle.js"></script>
+    <script>load("target/wasm32-unknown-unknown/debug/demos.wasm");</script>
+    -->
+    
+    <div id="dump">
+        text
+    </div>
+
+    <script>
+        fetch("http://localhost:3000/click",{
+            mode:"no-cors"
+        })
+            .then(data => {
+                var elem = document.getElementById("dump");
+                console.log(data);
+                data.text().then(str => {
+                    console.log(str);
+                    elem.innerHTML = "on client" + str;
+                });
+                
+                
+            }).catch(function (err) {
+            	var elem = document.getElementById("dump");
+                elem.innerHTML = err;
+            });
+    </script>
 </body>
 
 </html>
