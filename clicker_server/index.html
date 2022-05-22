@@ -1,0 +1,127 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TITLE</title>
+    <!--
+    <style>
+        html,
+        body,
+        canvas {
+            margin: 0px;
+            padding: 0px;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: absolute;
+            background: black;
+            z-index: 0;
+        }
+    </style>
+    -->
+</head>
+
+<body>
+    <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/js/mq_js_bundle.js 
+    <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle.js"></script>
+    -->
+    <!--
+    <canvas id="glcanvas" tabindex='1'></canvas>
+    <script src="js/mq_js_bundle.js"></script>
+    <script>load("target/wasm32-unknown-unknown/debug/demos.wasm");</script>
+    -->
+
+    <div>
+        <div id="thePrompt" style="opacity:0">
+            <div>
+                The button has been clicked <span id="clicks"></span> times.
+            </div>
+            <div>
+                You have clicked it <span id="personalClicks"></span> times.
+            </div>
+        </div>
+        <button id="theButton">Click me</button>
+    </div>
+
+    <script>
+
+        let personalClicks = 0;
+        let hasPromptBeenShown = false;
+
+
+
+        function fadeIn(el, time) {
+            el.style.opacity = 0;
+
+            var last = +new Date();
+            var tick = function () {
+                el.style.opacity = +el.style.opacity + (new Date() - last) / time;
+                last = +new Date();
+
+                if (+el.style.opacity < 1) {
+                    (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+                }
+            };
+
+            tick();
+        }
+
+
+
+        function updateClicksDisplay(clicks) {
+            var elem = document.getElementById("clicks");
+            elem.innerHTML = clicks;
+        }
+        function updatePersonalClicksDisplay(clicks) {
+            var elem = document.getElementById("personalClicks");
+            elem.innerHTML = clicks;
+        }
+        function refreshCount() {
+            fetch("http://localhost:3000/click", {
+                method: "GET"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    updateClicksDisplay(data.clicks);
+                }).catch(function (err) {
+                    var elem = document.getElementById("dump");
+                    elem.innerHTML = err;
+                });
+
+            setTimeout(refreshCount, 1000);
+        }
+        refreshCount();
+        updatePersonalClicksDisplay(personalClicks);
+
+        var theButton = document.getElementById("theButton");
+        theButton.addEventListener('click', function () {
+
+            if (!hasPromptBeenShown) {
+                var el = document.getElementById("thePrompt");
+                fadeIn(el, 2000);
+                hasPromptBeenShown = true;
+            }
+
+            personalClicks += 1;
+            updatePersonalClicksDisplay(personalClicks);
+
+            fetch("http://localhost:3000/click", {
+                method: "POST"
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    updateClicksDisplay(data.clicks);
+                }).catch(function (err) {
+                    var elem = document.getElementById("dump");
+                    elem.innerHTML = err;
+                });
+
+        });
+
+
+    </script>
+</body>
+
+</html>
