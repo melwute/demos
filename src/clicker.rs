@@ -16,9 +16,6 @@ async fn hello_basic(req: Request<Body>) -> Result<Response<Body>, hyper::Error>
     let mut response = Response::new(Body::empty());
 
     match (req.method(), req.uri().path()) {
-        (&Method::GET, "/") => {
-            *response.body_mut() = Body::from("Try POSTing data to /echo");
-        }
         (&Method::GET, "/click") => {
             let clicks = get_clicks();
             *response.body_mut() = Body::from(format!("clicks {}", clicks));
