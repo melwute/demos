@@ -14,6 +14,7 @@ use crate::demo_foragerclone::DemoForagerClone;
 use crate::demo_roguelike::DemoRoguelike;
 use crate::demo_snowflake::SnowingState;
 use crate::demo_tabtargetrpg::DemoTabTargetRpg;
+use crate::demo_easing::DemoEasing;
 
 use demo_state::DemoState;
 use instant::SystemTime;
@@ -25,6 +26,7 @@ mod demo_roguelike;
 mod demo_snowflake;
 mod demo_state;
 mod demo_tabtargetrpg;
+mod demo_easing;
 
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
@@ -37,7 +39,7 @@ fn get_epoch_ms() -> u128 {
 async fn main() {
     rand::srand(get_epoch_ms() as u64);
     let mut state = ApplicationState {
-        current_demo: Some(Box::new(DemoForagerClone::new().await)),
+        current_demo: Some(Box::new(DemoEasing::new())),
     };
     loop {
         state.process().await;
@@ -88,6 +90,9 @@ impl ApplicationState {
         draw_text("5) Forager clone ", 20.0, last_y, 30.0, DARKGRAY);
         last_y += horizontal_spacing;
 
+        draw_text("6) Easing ", 20.0, last_y, 30.0, DARKGRAY);
+        last_y += horizontal_spacing;
+
         if is_key_released(KeyCode::Key1) {
             self.current_demo = Some(Box::new(SnowingState::new(
                 screen_width() as u32,
@@ -109,6 +114,10 @@ impl ApplicationState {
 
         if is_key_released(KeyCode::Key5) {
             self.current_demo = Some(Box::new(DemoForagerClone::new().await));
+        }
+
+        if is_key_released(KeyCode::Key6) {
+            self.current_demo = Some(Box::new(DemoEasing::new()));
         }
     }
 }
