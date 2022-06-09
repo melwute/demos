@@ -2,6 +2,7 @@ use std::{convert::TryInto, f32::consts::PI};
 
 use crate::demo_state::DemoState;
 
+use legion::*;
 use macroquad::prelude::*;
 
 //Here so I can just copy and paste and start off with a new demo
@@ -13,8 +14,34 @@ pub struct Brick {
     dimension: Vec2,
 }
 
+pub struct Renderable {
+    offset: Vec2, //offset to position. This might be better called "position_offset"
+    color: Color,
+    dimension: Vec2,
+}
+
+struct OffsetAnimation {
+    start: Vec2,
+    end: Vec2,
+    duration: f32, //seconds TODO duration instead of f32?
+    current: f32,
+}
+struct DimensionAnimation {
+    start: Vec2,
+    end: Vec2,
+    duration: f32, //seconds TODO duration instead of f32?
+    current: f32,
+}
+
+struct ColorAnimation {
+    start: Color,
+    end: Color,
+    duration: f32, //seconds TODO duration instead of f32?
+    current: f32,
+}
+
 #[derive(Debug)]
-struct Animation {
+struct AnimationOld {
     start: Vec2,
     end: Vec2,
     duration: f32, //seconds TODO duration instead of f32?
@@ -24,7 +51,42 @@ struct Animation {
 pub struct DemoEasing {
     screen_size: Vec2,
     brick: Brick,
-    animation: Animation,
+    animation: AnimationOld,
+
+    world: World,
+    resources: Resources,
+}
+
+pub fn spawn_new_square(position: Vec2, offset: Vec2, world: &mut World) -> Entity {
+    world.push((
+        position,
+        Renderable {
+            offset,
+            color: Color::from_rgba(208, 58, 209, 255),
+            dimension: vec2(32.0, 32.0),
+        },
+    ))
+}
+
+pub fn spawn_new_square_with_offset_anim(
+    position: Vec2,
+    offset: Vec2,
+    world: &mut World,
+) -> Entity {
+    world.push((
+        position,
+        Renderable {
+            offset,
+            color: Color::from_rgba(208, 58, 209, 255),
+            dimension: vec2(32.0, 32.0),
+        },
+        OffsetAnimation {
+            start: vec2(0.0, 0.0),
+            end: vec2(10.0, 10.0),
+            duration: 1.5, //seconds TODO duration instead of f32?
+            current: 0.0,
+        },
+    ))
 }
 
 impl DemoEasing {
@@ -34,14 +96,22 @@ impl DemoEasing {
         let start = vec2(0.0 + 32.0, screen_size.y / 2.0);
         let end = vec2(screen_size.x / 2.0, screen_size.y / 2.0);
 
+        let resources = Resources::default();
+        let mut world = World::default();
+
+        spawn_new_square(start, vec2(0.0, 0.0), &mut world);
+        spawn_new_square_with_offset_anim(end, vec2(10.0, 10.0), &mut world);
+
         DemoEasing {
+            world,
+            resources,
             screen_size,
             brick: Brick {
                 color: Color::from_rgba(208, 58, 209, 255),
                 position: start,
                 dimension: vec2(32.0, 32.0),
             },
-            animation: Animation {
+            animation: AnimationOld {
                 start,
                 end,
                 duration: 1.5,
@@ -230,10 +300,47 @@ impl DemoState for DemoEasing {
             anim.current = anim.duration;
         }
 
+        let mut query = <(&mut OffsetAnimation, &mut Renderable)>::query();
+
+        query.for_each_mut(&mut self.world, |(mut animation, mut render)| {
+            let anim = &mut animation;
+            if anim.current >= anim.duration {
+                anim.current = 0.0;
+            }
+
+            anim.current += seconds_delta;
+            if anim.current >= anim.duration {
+                anim.current = anim.duration;
+            }
+
+            let t = anim.current / anim.duration;
+            let t = ease_out_bounce(t);
+
+            render.offset = vec2(
+                lerp(anim.start.x, anim.end.x, t),
+                lerp(anim.start.y, anim.end.y, t),
+            );
+        });
+
+        let mut query = <(&Vec2, &Renderable)>::query();
+        query.for_each(&mut self.world, |(pos, render)| {
+            let location = *pos + render.offset;
+            draw_rectangle(
+                location.x,
+                location.y,
+                render.dimension.x,
+                render.dimension.y,
+                render.color,
+            );
+
+            draw_rectangle(pos.x, pos.y, 8.0, 8.0, Color::from_rgba(255, 255, 100, 255));
+        });
+
+        /*
         self.draw_lerp(seconds_delta);
         self.draw_lerp_other(seconds_delta);
         self.draw_lerp_size(seconds_delta);
-        /*
+
         let current = {
             let anim = &mut self.animation;
             if anim.current >= anim.duration {
